@@ -7,6 +7,7 @@ from aiogram import Bot
 from app.bot.bot import build_dispatcher
 from app.config import get_settings
 from app.db.session import engine
+from app.logging import configure_logging
 from app.runtime import configure_event_loop
 from app.services.factory import build_chat_service
 
@@ -18,6 +19,7 @@ def main() -> None:
         print("Telegram bot is disabled (TELEGRAM_ENABLED=false or TELEGRAM_BOT_TOKEN is empty).")
         return
 
+    configure_logging(settings.log_level)
     chat_service = build_chat_service(settings)
 
     async def run() -> None:
