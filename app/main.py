@@ -11,6 +11,8 @@ from app.ingest.embeddings import EmbeddingClient
 from app.logging import configure_logging
 from app.services.chat import ChatService
 from app.services.generation import Generator, load_system_prompt
+from app.services.memory import DialogueMemory
+from app.services.rewriting import QueryRewriter, load_rewrite_prompt
 
 
 def create_app() -> FastAPI:
@@ -19,12 +21,17 @@ def create_app() -> FastAPI:
     configure_logging(settings.log_level)
 
     system_prompt = load_system_prompt(settings.prompts_dir)
+    rewrite_prompt = load_rewrite_prompt(settings.prompts_dir)
     embedder = EmbeddingClient.from_settings(settings)
     generator = Generator.from_settings(settings, system_prompt)
+    rewriter = QueryRewriter.from_settings(settings, rewrite_prompt)
+    memory = DialogueMemory(settings.memory_size)
     chat_service = ChatService(
         settings=settings,
         embedder=embedder,
         generator=generator,
+        rewriter=rewriter,
+        memory=memory,
         session_factory=async_session_factory,
     )
     rate_limiter = RateLimiter(settings.rate_limit_requests, settings.rate_limit_window_seconds)

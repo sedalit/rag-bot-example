@@ -1,4 +1,4 @@
-"""Chat orchestration: embed → retrieve → threshold → generate."""
+"""Chat orchestration: rewrite → embed → retrieve → threshold → generate."""
 
 import logging
 import time
@@ -9,11 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.config import Settings
 from app.ingest.embeddings import Embedder
 from app.services.generation import Generator
+from app.services.memory import DialogueMemory, Turn
 from app.services.retrieval import (
     REFUSAL_ANSWER,
     meets_threshold,
     search_similar,
 )
+from app.services.rewriting import QueryRewriter
 
 logger = logging.getLogger(__name__)
 
@@ -46,17 +48,24 @@ class ChatService:
         settings: Settings,
         embedder: Embedder,
         generator: Generator,
+        rewriter: QueryRewriter,
+        memory: DialogueMemory,
         session_factory: async_sessionmaker[AsyncSession],
     ) -> None:
         self._settings = settings
         self._embedder = embedder
         self._generator = generator
+        self._rewriter = rewriter
+        self._memory = memory
         self._session_factory = session_factory
 
     async def answer(self, session_id: str, message: str) -> ChatResult:
         started = time.perf_counter()
 
-        query_embedding = (await self._embedder.embed([message]))[0]
+        history = self._memory.get(session_id)
+        query = await self._rewriter.rewrite(history, message)
+
+        query_embedding = (await self._embedder.embed([query]))[0]
 
         search_started = time.perf_counter()
         async with self._session_factory() as session:
@@ -65,7 +74,8 @@ class ChatService:
 
         if not meets_threshold(chunks, self._settings.relevance_threshold):
             latency_ms = int((time.perf_counter() - started) * 1000)
-            self._log_refusal(session_id, message, search_ms, len(chunks))
+            self._log_refusal(session_id, query, search_ms, len(chunks))
+            self._remember(session_id, message, REFUSAL_ANSWER)
             return ChatResult(
                 answer=REFUSAL_ANSWER, sources=[], latency_ms=latency_ms, refused=True
             )
@@ -84,6 +94,8 @@ class ChatService:
             "answered",
             extra={
                 "session_id": session_id,
+                "query": query,
+                "rewrote": bool(history),
                 "search_ms": round(search_ms, 2),
                 "generation_ms": round(generation_ms, 2),
                 "total_tokens": generated.total_tokens,
@@ -97,17 +109,24 @@ class ChatService:
                 ],
             },
         )
+        self._remember(session_id, message, generated.text)
         return ChatResult(answer=generated.text, sources=sources, latency_ms=latency_ms)
 
-    def _log_refusal(
-        self, session_id: str, message: str, search_ms: float, chunk_count: int
-    ) -> None:
+    def reset(self, session_id: str) -> None:
+        """Clear the dialogue history for a session."""
+        self._memory.reset(session_id)
+
+    def _remember(self, session_id: str, user_message: str, assistant_answer: str) -> None:
+        self._memory.add(session_id, Turn(role="user", text=user_message))
+        self._memory.add(session_id, Turn(role="assistant", text=assistant_answer))
+
+    def _log_refusal(self, session_id: str, query: str, search_ms: float, chunk_count: int) -> None:
         logger.info(
             "refused",
             extra={
                 "session_id": session_id,
                 "search_ms": round(search_ms, 2),
                 "chunks": chunk_count,
-                "query": message,
+                "query": query,
             },
         )
