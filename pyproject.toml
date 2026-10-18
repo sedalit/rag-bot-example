@@ -41,7 +41,8 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B", "SIM", "N", "RUF"]
-ignore = []
+# The project legitimately mixes Cyrillic (Russian) text with code.
+ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.format]
 quote-style = "double"
