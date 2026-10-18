@@ -9,7 +9,8 @@ the repository.
 `DATABASE_URL` points to PostgreSQL using the psycopg dialect. Use the IPv4
 loopback address `127.0.0.1` rather than `localhost` to avoid IPv6 resolution
 issues under Docker Desktop. The `EMBEDDING_DIM` value must match the output
-dimension of the configured embedding model.
+dimension of the configured embedding model; the default is 1536 for
+`text-embedding-3-small`.
 
 ## Provider
 
@@ -31,7 +32,7 @@ precise but may lose surrounding context.
 `TOP_K` controls how many chunks are retrieved per query, defaulting to five.
 `RELEVANCE_THRESHOLD` is the minimum cosine similarity for the best chunk;
 queries below it are refused. `MEMORY_SIZE` is the number of recent dialogue
-turns kept per session.
+turns kept per session, defaulting to six.
 
 ## Rate limiting
 
