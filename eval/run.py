@@ -13,7 +13,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml  # type: ignore[import-untyped]
-from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +20,7 @@ from app.config import Settings, get_settings
 from app.db.session import async_session_factory, engine
 from app.ingest.embeddings import EmbeddingClient
 from app.runtime import configure_event_loop
+from app.services.client import build_openai_client
 from app.services.generation import Generator, load_system_prompt
 from app.services.retrieval import REFUSAL_ANSWER, best_similarity, search_similar
 
@@ -68,10 +68,8 @@ class Judge:
     """LLM judge that scores an answer against the expected key facts."""
 
     def __init__(self, settings: Settings, prompt: str) -> None:
-        self._client = AsyncOpenAI(
-            base_url=settings.llm_base_url,
-            api_key=settings.llm_api_key or "not-required",
-            timeout=settings.llm_timeout_seconds,
+        self._client = build_openai_client(
+            settings.llm_base_url, settings.llm_api_key, settings.llm_timeout_seconds
         )
         self._model = settings.chat_model
         self._prompt = prompt

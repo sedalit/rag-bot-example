@@ -1,6 +1,7 @@
 """Unit tests for the batched embedding client with retries."""
 
 import pytest
+from openai import APIConnectionError
 
 from app.ingest.embeddings import EmbeddingClient
 
@@ -26,7 +27,7 @@ class _FakeEmbeddings:
 
 
 class _FlakyEmbeddings:
-    """Fails the first ``failures`` calls, then succeeds."""
+    """Fails the first ``failures`` calls with a retryable error, then succeeds."""
 
     def __init__(self, failures: int) -> None:
         self.attempts = 0
@@ -35,8 +36,19 @@ class _FlakyEmbeddings:
     async def create(self, *, model: str, input: list[str], **kwargs: object) -> _Response:
         self.attempts += 1
         if self.attempts <= self.failures:
-            raise RuntimeError("transient provider error")
+            raise APIConnectionError(message="transient provider error", request=None)
         return _Response([[1.0, 1.0, 1.0] for _ in input])
+
+
+class _FailingEmbeddings:
+    """Always fails with a non-retryable (client) error."""
+
+    def __init__(self) -> None:
+        self.attempts = 0
+
+    async def create(self, *, model: str, input: list[str], **kwargs: object) -> _Response:
+        self.attempts += 1
+        raise RuntimeError("invalid request")
 
 
 class _FakeOpenAI:
@@ -62,7 +74,7 @@ def _make_client(
         def __init__(self, **kwargs: object) -> None:
             self.embeddings = embeddings
 
-    monkeypatch.setattr("app.ingest.embeddings.AsyncOpenAI", OpenAIWithEmbeddings)
+    monkeypatch.setattr("app.services.client.AsyncOpenAI", OpenAIWithEmbeddings)
     monkeypatch.setattr("app.ingest.embeddings.asyncio.sleep", _no_sleep)
 
     client = EmbeddingClient(
@@ -113,10 +125,22 @@ async def test_embed_raises_after_retries_exhausted(monkeypatch: pytest.MonkeyPa
     fake = _FlakyEmbeddings(failures=999)
     client, _ = _make_client(monkeypatch, embeddings=fake, max_retries=3)
 
-    with pytest.raises(RuntimeError, match="transient provider error"):
+    with pytest.raises(APIConnectionError, match="transient provider error"):
         await client.embed(["a"])
 
     assert fake.attempts == 3
+
+
+async def test_embed_does_not_retry_non_transient_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = _FailingEmbeddings()
+    client, _ = _make_client(monkeypatch, embeddings=fake, max_retries=3)
+
+    with pytest.raises(RuntimeError, match="invalid request"):
+        await client.embed(["a"])
+
+    assert fake.attempts == 1
 
 
 async def test_embed_validates_dimension(monkeypatch: pytest.MonkeyPatch) -> None:

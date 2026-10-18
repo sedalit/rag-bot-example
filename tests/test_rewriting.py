@@ -56,7 +56,7 @@ async def test_rewrite_empty_history_returns_message_unchanged():
 
 
 async def test_rewrite_with_history_uses_llm(monkeypatch):
-    monkeypatch.setattr("app.services.rewriting.AsyncOpenAI", _OpenAI)
+    monkeypatch.setattr("app.services.client.AsyncOpenAI", _OpenAI)
     history = [Turn(role="user", text="How do I load documents?")]
     result = await _rewriter().rewrite(history, "And the chunk size?")
     assert result == "standalone question"

@@ -1,7 +1,7 @@
 """In-memory per-session rate limiting."""
 
 import time
-from collections import defaultdict, deque
+from collections import deque
 
 
 class RateLimiter:
@@ -14,12 +14,15 @@ class RateLimiter:
             raise ValueError("window_seconds must be positive")
         self._max_requests = max_requests
         self._window_seconds = window_seconds
-        self._hits: dict[str, deque[float]] = defaultdict(deque)
+        self._hits: dict[str, deque[float]] = {}
 
     def allow(self, key: str, now: float | None = None) -> bool:
         """Return True and record the request if it fits within the window."""
         now = time.monotonic() if now is None else now
-        window = self._hits[key]
+        window = self._hits.get(key)
+        if window is None:
+            window = deque()
+            self._hits[key] = window
         while window and now - window[0] >= self._window_seconds:
             window.popleft()
         if len(window) >= self._max_requests:

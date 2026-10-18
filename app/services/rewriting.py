@@ -3,9 +3,8 @@
 import logging
 from pathlib import Path
 
-from openai import AsyncOpenAI
-
 from app.config import Settings
+from app.services.client import build_openai_client
 from app.services.memory import Turn
 
 logger = logging.getLogger(__name__)
@@ -41,9 +40,7 @@ class QueryRewriter:
         temperature: float,
         timeout: float,
     ) -> None:
-        self._client = AsyncOpenAI(
-            base_url=base_url, api_key=api_key or "not-required", timeout=timeout
-        )
+        self._client = build_openai_client(base_url, api_key, timeout)
         self._model = model
         self._prompt = prompt
         self._temperature = temperature
@@ -56,7 +53,7 @@ class QueryRewriter:
             api_key=settings.llm_api_key,
             model=settings.chat_model,
             prompt=prompt,
-            temperature=0.0,
+            temperature=settings.llm_temperature,
             timeout=settings.llm_timeout_seconds,
         )
 

@@ -5,9 +5,10 @@ import logging
 from collections.abc import Sequence
 from typing import Protocol
 
-from openai import AsyncOpenAI
+from openai import APIConnectionError, APIStatusError, RateLimitError
 
 from app.config import Settings
+from app.services.client import build_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,20 @@ class Embedder(Protocol):
 
 def _batches(texts: Sequence[str], size: int) -> list[list[str]]:
     return [list(texts[i : i + size]) for i in range(0, len(texts), size)]
+
+
+def _is_retryable(exc: Exception) -> bool:
+    """Return whether a provider error is worth retrying.
+
+    Retries network failures, timeouts (subclasses of ``APIConnectionError``),
+    rate limits (429) and server errors (5xx). Client errors (4xx) are a bad
+    request or configuration and are re-raised immediately.
+    """
+    if isinstance(exc, APIConnectionError | RateLimitError):
+        return True
+    if isinstance(exc, APIStatusError):
+        return exc.status_code >= 500
+    return False
 
 
 class EmbeddingClient:
@@ -48,11 +63,7 @@ class EmbeddingClient:
         self._batch_size = batch_size
         self._max_retries = max_retries
         self._expected_dim = expected_dim
-        # A placeholder key keeps construction valid for local providers that
-        # ignore auth; real requests still send the configured key.
-        self._client = AsyncOpenAI(
-            base_url=base_url, api_key=api_key or "not-required", timeout=timeout
-        )
+        self._client = build_openai_client(base_url, api_key, timeout)
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "EmbeddingClient":
@@ -83,18 +94,19 @@ class EmbeddingClient:
         for attempt in range(self._max_retries):
             try:
                 return await self._embed_batch(batch)
-            except Exception as exc:  # retry transient/unknown provider errors
+            except Exception as exc:
                 last_error = exc
-                if attempt < self._max_retries - 1:
-                    wait = 2**attempt
-                    logger.warning(
-                        "embedding request failed (attempt %d/%d), retrying in %.0fs: %s",
-                        attempt + 1,
-                        self._max_retries,
-                        wait,
-                        exc,
-                    )
-                    await asyncio.sleep(wait)
+                if attempt >= self._max_retries - 1 or not _is_retryable(exc):
+                    break
+                wait = 2**attempt
+                logger.warning(
+                    "embedding request failed (attempt %d/%d), retrying in %.0fs: %s",
+                    attempt + 1,
+                    self._max_retries,
+                    wait,
+                    exc,
+                )
+                await asyncio.sleep(wait)
         assert last_error is not None
         raise last_error
 

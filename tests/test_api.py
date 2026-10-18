@@ -33,11 +33,6 @@ class _FakeEmbeddingsEndpoint:
         return _FakeEmbeddingsResponse([_FakeEmbedding([0.1, 0.2, 0.3]) for _ in input])
 
 
-class _FakeEmbeddingsClient:
-    def __init__(self, **kwargs: object) -> None:
-        self.embeddings = _FakeEmbeddingsEndpoint()
-
-
 class _FakeMessage:
     def __init__(self, content: str) -> None:
         self.content = content
@@ -69,8 +64,11 @@ class _FakeChat:
         self.completions = _FakeCompletions()
 
 
-class _FakeChatClient:
+class _FakeOpenAIClient:
+    """Single fake OpenAI client: embedder uses ``.embeddings``, generator uses ``.chat``."""
+
     def __init__(self, **kwargs: object) -> None:
+        self.embeddings = _FakeEmbeddingsEndpoint()
         self.chat = _FakeChat()
 
 
@@ -149,8 +147,7 @@ _BELOW_ROWS = [_FakeRow("irrelevant", "Section", "doc.md", 0, 0.1)]
 
 
 def _make_chat_service(monkeypatch: pytest.MonkeyPatch, rows: list[_FakeRow]) -> ChatService:
-    monkeypatch.setattr("app.ingest.embeddings.AsyncOpenAI", _FakeEmbeddingsClient)
-    monkeypatch.setattr("app.services.generation.AsyncOpenAI", _FakeChatClient)
+    monkeypatch.setattr("app.services.client.AsyncOpenAI", _FakeOpenAIClient)
 
     embedder = EmbeddingClient(
         base_url="http://test",

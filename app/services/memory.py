@@ -1,6 +1,6 @@
 """In-memory per-session dialogue history."""
 
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass
 
 
@@ -19,18 +19,22 @@ class DialogueMemory:
         if max_turns < 1:
             raise ValueError("max_turns must be positive")
         self._max_turns = max_turns
-        self._history: dict[str, deque[Turn]] = defaultdict(deque)
+        self._history: dict[str, deque[Turn]] = {}
 
     def add(self, session_id: str, turn: Turn) -> None:
         """Append a turn, evicting the oldest when over the cap."""
-        queue = self._history[session_id]
+        queue = self._history.get(session_id)
+        if queue is None:
+            queue = deque()
+            self._history[session_id] = queue
         queue.append(turn)
         while len(queue) > self._max_turns:
             queue.popleft()
 
     def get(self, session_id: str) -> list[Turn]:
         """Return the recent turns for a session, oldest first."""
-        return list(self._history[session_id])
+        queue = self._history.get(session_id)
+        return list(queue) if queue is not None else []
 
     def reset(self, session_id: str) -> None:
         """Drop all history for a session."""

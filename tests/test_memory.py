@@ -34,6 +34,12 @@ def test_reset_clears_history():
     assert memory.get("s") == []
 
 
+def test_get_does_not_create_session():
+    memory = DialogueMemory(max_turns=4)
+    assert memory.get("missing") == []
+    assert "missing" not in memory._history
+
+
 def test_invalid_max_turns_raises():
     with pytest.raises(ValueError):
         DialogueMemory(max_turns=0)

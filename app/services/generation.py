@@ -4,15 +4,17 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 
 from app.config import Settings
-from app.services.retrieval import RetrievedChunk
+from app.services.client import build_openai_client
+from app.services.retrieval import REFUSAL_ANSWER, RetrievedChunk
 
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT_FILENAME = "system.md"
+# Placeholder in system.md replaced with the single source of truth in code.
+REFUSAL_PLACEHOLDER = "{{REFUSAL_ANSWER}}"
 
 
 @dataclass(frozen=True)
@@ -31,9 +33,14 @@ def _total_tokens(response: ChatCompletion) -> int:
 
 
 def load_system_prompt(prompts_dir: Path) -> str:
-    """Read the system prompt from its file (kept out of code)."""
+    """Read the system prompt from its file (kept out of code).
+
+    The refusal message is injected from ``REFUSAL_ANSWER`` so the exact wording
+    lives in one place instead of drifting between the prompt and the code.
+    """
     path = prompts_dir / SYSTEM_PROMPT_FILENAME
-    return path.read_text(encoding="utf-8").strip()
+    text = path.read_text(encoding="utf-8").strip()
+    return text.replace(REFUSAL_PLACEHOLDER, REFUSAL_ANSWER)
 
 
 def build_context(chunks: list[RetrievedChunk]) -> str:
@@ -64,11 +71,7 @@ class Generator:
         max_tokens: int,
         timeout: float,
     ) -> None:
-        # A placeholder key keeps construction valid for local providers that
-        # ignore auth; real requests still send the configured key.
-        self._client = AsyncOpenAI(
-            base_url=base_url, api_key=api_key or "not-required", timeout=timeout
-        )
+        self._client = build_openai_client(base_url, api_key, timeout)
         self._model = model
         self._system_prompt = system_prompt
         self._temperature = temperature
