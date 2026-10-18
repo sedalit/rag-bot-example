@@ -26,12 +26,14 @@
     - "session_id and message"
 
 - id: 5
-  question: "What are the three responsibilities of the services layer?"
+  question: "What are the responsibilities of the services layer?"
   expected_file: "architecture.md"
   facts:
     - "retrieval"
+    - "query rewriting"
     - "generation"
     - "memory"
+    - "chat orchestration"
 
 - id: 6
   question: "What happens when the best retrieved chunk is below the relevance threshold?"
@@ -168,6 +170,7 @@
   expected_file: "architecture.md"
   facts:
     - "validated and rate-limited"
+    - "rewritten into a standalone query"
     - "embedded and matched"
     - "threshold check"
     - "generation"

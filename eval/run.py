@@ -2,7 +2,8 @@
 
 Computes Hit@k, answer accuracy (via an LLM judge), refusal accuracy and
 average latency over ``eval/questions.yaml``, and writes the results to
-``eval/results/<date>.json``.
+``eval/results/<date>_<time>.json`` so repeated runs on the same day do not
+overwrite each other.
 """
 
 import asyncio
@@ -165,9 +166,9 @@ def compute_metrics(results: list[QuestionResult]) -> Metrics:
 
 def save_results(results: list[QuestionResult], metrics: Metrics, settings: Settings) -> Path:
     RESULTS_DIR.mkdir(exist_ok=True)
-    date = datetime.now(UTC).strftime("%Y-%m-%d")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M%S")
     payload = {
-        "date": date,
+        "date": timestamp,
         "config": {
             "top_k": settings.top_k,
             "relevance_threshold": settings.relevance_threshold,
@@ -179,7 +180,7 @@ def save_results(results: list[QuestionResult], metrics: Metrics, settings: Sett
         "metrics": asdict(metrics),
         "questions": [asdict(result) for result in results],
     }
-    output = RESULTS_DIR / f"{date}.json"
+    output = RESULTS_DIR / f"{timestamp}.json"
     output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return output
 

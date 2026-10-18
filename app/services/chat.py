@@ -80,13 +80,20 @@ class ChatService:
                 answer=REFUSAL_ANSWER, sources=[], latency_ms=latency_ms, refused=True
             )
 
+        # Keep only chunks that clear the threshold so irrelevant context is not
+        # injected into the prompt or shown as sources. The search result is
+        # sorted by similarity, so the survivors are a non-empty prefix.
+        relevant_chunks = [
+            chunk for chunk in chunks if chunk.similarity >= self._settings.relevance_threshold
+        ]
+
         generation_started = time.perf_counter()
-        generated = await self._generator.generate(message, chunks)
+        generated = await self._generator.generate(query, relevant_chunks)
         generation_ms = (time.perf_counter() - generation_started) * 1000
 
         sources = [
             Source(file=chunk.file_path, section=chunk.section, snippet=chunk.content)
-            for chunk in chunks
+            for chunk in relevant_chunks
         ]
         latency_ms = int((time.perf_counter() - started) * 1000)
 

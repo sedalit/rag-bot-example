@@ -10,20 +10,24 @@ The `api/` layer exposes HTTP routes. The `bot/` layer implements the Telegram
 interface. Both call the same service layer, so the answering logic is written
 once and never duplicated between channels.
 
-The `services/` layer contains three responsibilities: retrieval, generation,
-and dialogue memory. Retrieval turns a query into an embedding and fetches the
-top-k most similar chunks from pgvector. Generation builds a prompt from the
-retrieved chunks and asks the language model for a grounded answer. Memory
-keeps a short history of recent turns per session.
+The `services/` layer contains five responsibilities: retrieval, query
+rewriting, generation, dialogue memory, and chat orchestration. Retrieval turns
+a query into an embedding and fetches the top-k most similar chunks from
+pgvector. Query rewriting turns a follow-up message into a standalone query
+using recent history. Generation builds a prompt from the retrieved chunks and
+asks the language model for a grounded answer. Memory keeps a short history of
+recent turns per session. Chat orchestration wires these together into one
+entry point shared by the API and the bot.
 
 ## Data flow
 
 A question flows through several stages. First the message is validated and
-rate-limited. Then the query is embedded and matched against stored chunks by
-cosine similarity. If the best match is below the relevance threshold, the
-service returns a refusal without calling the model. Otherwise the chunks are
-formatted into a context block and the model generates an answer with inline
-citations such as [1] and [2].
+rate-limited. Then, when dialogue history exists, the message is rewritten into
+a standalone query. The resulting query is embedded and matched against stored
+chunks by cosine similarity. If the best match is below the relevance
+threshold, the service returns a refusal without calling the model. Otherwise
+only the chunks at or above the threshold are formatted into a context block
+and the model generates an answer with inline citations such as [1] and [2].
 
 ## Storage
 

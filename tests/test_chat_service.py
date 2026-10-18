@@ -112,6 +112,54 @@ async def test_rewrites_followup_when_history_exists(monkeypatch):
     assert message == "And the chunk size?"
 
 
+async def test_generates_from_rewritten_query(monkeypatch):
+    memory = DialogueMemory(max_turns=6)
+    memory.add("sid", Turn(role="user", text="How do I load documents?"))
+    memory.add("sid", Turn(role="assistant", text="Run the ingest command"))
+    rewriter = _FakeRewriter(rewritten="How do I load documents, standalone")
+    generator = _FakeGenerator("the answer", total_tokens=7)
+    service = ChatService(
+        settings=get_settings(),
+        embedder=_FakeEmbedder([[0.1, 0.2, 0.3]]),
+        generator=generator,
+        rewriter=rewriter,
+        memory=memory,
+        session_factory=_StubSessionFactory(),
+    )
+
+    async def fake_search(session: object, query_embedding: list[float], top_k: int):
+        return [_chunk(0.5)]
+
+    monkeypatch.setattr("app.services.chat.search_similar", fake_search)
+
+    await service.answer("sid", "And the chunk size?")
+
+    assert generator.calls[0][0] == "How do I load documents, standalone"
+
+
+async def test_filters_sub_threshold_chunks_before_generation(monkeypatch):
+    generator = _FakeGenerator("the answer", total_tokens=7)
+    service = ChatService(
+        settings=get_settings(),
+        embedder=_FakeEmbedder([[0.1, 0.2, 0.3]]),
+        generator=generator,
+        rewriter=_FakeRewriter(),
+        memory=DialogueMemory(max_turns=6),
+        session_factory=_StubSessionFactory(),
+    )
+
+    async def fake_search(session: object, query_embedding: list[float], top_k: int):
+        return [_chunk(0.5), _chunk(0.1), _chunk(0.05)]
+
+    monkeypatch.setattr("app.services.chat.search_similar", fake_search)
+
+    result = await service.answer("sid", "hello")
+
+    assert [s.file for s in result.sources] == ["doc.md"]
+    assert len(generator.calls[0][1]) == 1
+    assert generator.calls[0][1][0].similarity == 0.5
+
+
 async def test_reset_clears_history(monkeypatch):
     memory = DialogueMemory(max_turns=6)
     service = _service(monkeypatch, [_chunk(0.5)], memory=memory)

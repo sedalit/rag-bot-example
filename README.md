@@ -149,7 +149,7 @@ python -m eval.run
 ```
 
 Считает Hit@k, Answer accuracy (LLM-судья по рубрике), Refusal accuracy и
-среднюю задержку по `eval/questions.yaml`, пишет `eval/results/<дата>.json`.
+среднюю задержку по `eval/questions.yaml`, пишет `eval/results/<дата>_<время>.json`.
 
 ### Метрики
 
