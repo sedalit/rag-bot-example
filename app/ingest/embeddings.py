@@ -48,7 +48,11 @@ class EmbeddingClient:
         self._batch_size = batch_size
         self._max_retries = max_retries
         self._expected_dim = expected_dim
-        self._client = AsyncOpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
+        # A placeholder key keeps construction valid for local providers that
+        # ignore auth; real requests still send the configured key.
+        self._client = AsyncOpenAI(
+            base_url=base_url, api_key=api_key or "not-required", timeout=timeout
+        )
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "EmbeddingClient":

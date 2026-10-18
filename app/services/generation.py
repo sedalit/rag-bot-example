@@ -1,9 +1,11 @@
 """Answer generation from retrieved context via an OpenAI-compatible API."""
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletion
 
 from app.config import Settings
 from app.services.retrieval import RetrievedChunk
@@ -11,6 +13,21 @@ from app.services.retrieval import RetrievedChunk
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT_FILENAME = "system.md"
+
+
+@dataclass(frozen=True)
+class GeneratedAnswer:
+    """The model's answer together with its reported token usage."""
+
+    text: str
+    total_tokens: int
+
+
+def _total_tokens(response: ChatCompletion) -> int:
+    usage = response.usage
+    if usage is not None and usage.total_tokens is not None:
+        return usage.total_tokens
+    return 0
 
 
 def load_system_prompt(prompts_dir: Path) -> str:
@@ -47,7 +64,11 @@ class Generator:
         max_tokens: int,
         timeout: float,
     ) -> None:
-        self._client = AsyncOpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
+        # A placeholder key keeps construction valid for local providers that
+        # ignore auth; real requests still send the configured key.
+        self._client = AsyncOpenAI(
+            base_url=base_url, api_key=api_key or "not-required", timeout=timeout
+        )
         self._model = model
         self._system_prompt = system_prompt
         self._temperature = temperature
@@ -66,7 +87,7 @@ class Generator:
             timeout=settings.llm_timeout_seconds,
         )
 
-    async def generate(self, question: str, chunks: list[RetrievedChunk]) -> str:
+    async def generate(self, question: str, chunks: list[RetrievedChunk]) -> GeneratedAnswer:
         """Generate a grounded answer for the question from the given chunks."""
         context = build_context(chunks)
         response = await self._client.chat.completions.create(
@@ -78,6 +99,7 @@ class Generator:
             temperature=self._temperature,
             max_tokens=self._max_tokens,
         )
-        content = response.choices[0].message.content
-        logger.info("generated answer of %d chars", len(content) if content else 0)
-        return content or ""
+        content = response.choices[0].message.content or ""
+        total_tokens = _total_tokens(response)
+        logger.info("generated answer of %d chars, %d tokens", len(content), total_tokens)
+        return GeneratedAnswer(text=content, total_tokens=total_tokens)
