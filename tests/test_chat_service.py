@@ -3,6 +3,7 @@
 from app.config import get_settings
 from app.services.chat import ChatService
 from app.services.generation import GeneratedAnswer
+from app.services.memory import DialogueMemory, Turn
 from app.services.retrieval import REFUSAL_ANSWER, RetrievedChunk
 
 
@@ -23,6 +24,16 @@ class _FakeGenerator:
     async def generate(self, question: str, chunks: list[RetrievedChunk]) -> GeneratedAnswer:
         self.calls.append((question, chunks))
         return GeneratedAnswer(text=self._answer, total_tokens=self._total_tokens)
+
+
+class _FakeRewriter:
+    def __init__(self, rewritten: str | None = None) -> None:
+        self._rewritten = rewritten
+        self.calls: list[tuple[list[Turn], str]] = []
+
+    async def rewrite(self, history: list[Turn], message: str) -> str:
+        self.calls.append((history, message))
+        return self._rewritten or message
 
 
 class _StubSession:
@@ -48,11 +59,19 @@ def _chunk(similarity: float) -> RetrievedChunk:
     )
 
 
-def _service(monkeypatch, chunks: list[RetrievedChunk]) -> ChatService:
+def _service(
+    monkeypatch,
+    chunks: list[RetrievedChunk],
+    *,
+    rewriter: _FakeRewriter | None = None,
+    memory: DialogueMemory | None = None,
+) -> ChatService:
     service = ChatService(
         settings=get_settings(),
         embedder=_FakeEmbedder([[0.1, 0.2, 0.3]]),
         generator=_FakeGenerator("the answer", total_tokens=7),
+        rewriter=rewriter or _FakeRewriter(),
+        memory=memory or DialogueMemory(max_turns=6),
         session_factory=_StubSessionFactory(),
     )
 
@@ -76,3 +95,28 @@ async def test_answers_above_threshold(monkeypatch):
     assert result.answer == "the answer"
     assert [s.file for s in result.sources] == ["doc.md", "doc.md"]
     assert result.latency_ms >= 0
+
+
+async def test_rewrites_followup_when_history_exists(monkeypatch):
+    memory = DialogueMemory(max_turns=6)
+    memory.add("sid", Turn(role="user", text="How do I load documents?"))
+    memory.add("sid", Turn(role="assistant", text="Run the ingest command"))
+    rewriter = _FakeRewriter(rewritten="What is the default chunk size?")
+    service = _service(monkeypatch, [_chunk(0.5)], rewriter=rewriter, memory=memory)
+
+    await service.answer("sid", "And the chunk size?")
+
+    assert rewriter.calls
+    history, message = rewriter.calls[0]
+    assert len(history) == 2
+    assert message == "And the chunk size?"
+
+
+async def test_reset_clears_history(monkeypatch):
+    memory = DialogueMemory(max_turns=6)
+    service = _service(monkeypatch, [_chunk(0.5)], memory=memory)
+    await service.answer("sid", "hello")
+    assert memory.get("sid")
+
+    service.reset("sid")
+    assert memory.get("sid") == []

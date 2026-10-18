@@ -10,6 +10,7 @@ from app.ingest.embeddings import EmbeddingClient
 from app.main import create_app
 from app.services.chat import ChatService
 from app.services.generation import Generator
+from app.services.memory import DialogueMemory
 from app.services.retrieval import REFUSAL_ANSWER
 
 # --- Fakes for the OpenAI-compatible clients (no network) --------------------
@@ -71,6 +72,11 @@ class _FakeChat:
 class _FakeChatClient:
     def __init__(self, **kwargs: object) -> None:
         self.chat = _FakeChat()
+
+
+class _IdentityRewriter:
+    async def rewrite(self, history: object, message: str) -> str:
+        return message
 
 
 # --- Fakes for the database session used by retrieval ------------------------
@@ -168,6 +174,8 @@ def _make_chat_service(monkeypatch: pytest.MonkeyPatch, rows: list[_FakeRow]) ->
         settings=get_settings(),
         embedder=embedder,
         generator=generator,
+        rewriter=_IdentityRewriter(),
+        memory=DialogueMemory(max_turns=6),
         session_factory=_FakeSearchSessionFactory(rows),
     )
 
