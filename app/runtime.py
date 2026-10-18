@@ -13,3 +13,13 @@ def configure_event_loop() -> None:
     """
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
+def selector_loop_factory() -> asyncio.AbstractEventLoop:
+    """Return a selector event loop regardless of platform.
+
+    Uvicorn hardcodes ``ProactorEventLoop`` on Windows, so this factory is
+    passed to it via ``--loop app.runtime:selector_loop_factory`` to make
+    psycopg's async mode work.
+    """
+    return asyncio.SelectorEventLoop()
