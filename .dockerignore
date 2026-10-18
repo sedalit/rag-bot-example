@@ -1,0 +1,17 @@
+.git
+.gitignore
+.venv
+.uv
+__pycache__
+*.py[cod]
+.mypy_cache
+.ruff_cache
+.pytest_cache
+.pytest_tmp
+pytest-cache-files-*
+.coverage
+htmlcov
+.env
+eval/results
+docker-compose.yml
+Dockerfile
