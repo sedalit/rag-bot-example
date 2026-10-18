@@ -29,7 +29,8 @@ class Settings(BaseSettings):
     # psycopg3 works for both sync (Alembic) and async (runtime) engines.
     # 127.0.0.1 avoids the ::1 IPv6 loopback that can hang on Docker Desktop.
     database_url: str = "postgresql+psycopg://docsbot:docsbot@127.0.0.1:5432/docsbot"
-    # Dimension of the embedding column; must match the configured embedding model.
+    # Dimension of the embedding column; must match the configured embedding
+    # model. Changing it requires a new Alembic migration (see app/db/models.py).
     embedding_dim: int = 1536
 
     # OpenAI-compatible provider -----------------------------------------

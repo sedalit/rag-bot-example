@@ -4,21 +4,25 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.config import get_settings
 from app.db.base import Base
 
-# The embedding column dimension. It is fixed in the schema (and its Alembic
-# migration) and must match the configured embedding model's output dimension.
-EMBEDDING_DIM = 1536
+# The embedding column dimension, taken from the same setting the embedding
+# client validates against, so the schema and the client share one source.
+# Changing it in .env still requires a new Alembic migration, because the
+# pgvector column dimension is fixed by the existing migration snapshot.
+EMBEDDING_DIM = get_settings().embedding_dim
 
 
 class Document(Base):
     """A source Markdown file tracked by its path and content hash."""
 
     __tablename__ = "documents"
+    __table_args__ = (Index("ix_documents_path", "path"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     path: Mapped[str] = mapped_column(String(1024), unique=True, nullable=False)
@@ -42,6 +46,14 @@ class Chunk(Base):
     """A single retrievable piece of a document, with its vector embedding."""
 
     __tablename__ = "chunks"
+    __table_args__ = (
+        Index(
+            "ix_chunks_embedding_cosine",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     document_id: Mapped[uuid.UUID] = mapped_column(
