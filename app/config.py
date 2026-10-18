@@ -49,7 +49,7 @@ class Settings(BaseSettings):
 
     # Retrieval -----------------------------------------------------------
     top_k: int = 5
-    relevance_threshold: float = 0.45
+    relevance_threshold: float = 0.30
 
     # Dialogue memory -----------------------------------------------------
     memory_size: int = 6
