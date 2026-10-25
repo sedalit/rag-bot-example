@@ -54,7 +54,7 @@ def build_context(chunks: list[RetrievedChunk]) -> str:
 
 def build_user_prompt(question: str, context: str) -> str:
     """Assemble the user message from the question and retrieved context."""
-    return f"Context:\n{context}\n\nQuestion: {question}"
+    return f"Контекст:\n{context}\n\nВопрос: {question}"
 
 
 class Generator:

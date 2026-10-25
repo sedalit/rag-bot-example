@@ -14,6 +14,6 @@ def test_format_reply_appends_sources():
         Source(file="b.md", section="Section B", snippet="snippet b"),
     ]
     reply = format_reply("the answer", sources)
-    assert reply.startswith("the answer\n\nSources:\n")
+    assert reply.startswith("the answer\n\nИсточники:\n")
     assert "- a.md — Section A" in reply
     assert "- b.md — Section B" in reply

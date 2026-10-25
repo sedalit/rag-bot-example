@@ -1,52 +1,53 @@
-# Getting Started
+# Начало работы
 
-DocsBot is a retrieval-augmented generation (RAG) service that answers
-questions strictly from a Markdown knowledge base. Every answer is generated
-from retrieved chunks only and always cites its sources. When the knowledge
-base has no relevant material, the bot honestly says it does not know.
+DocsBot — это RAG-сервис (retrieval-augmented generation, генерация с
+дополнением из поиска), который отвечает на вопросы строго по базе знаний в
+формате Markdown. Каждый ответ строится только на найденных фрагментах и
+всегда содержит ссылки на источники. Если в базе знаний нет подходящего
+материала, бот честно сообщает, что не знает ответа.
 
-## Prerequisites
+## Требования
 
-To run DocsBot you need Docker with Docker Compose. The stack bundles a
-PostgreSQL 16 database with the pgvector extension, a FastAPI application, and
-an optional Telegram bot. All services are described in a single
-`docker-compose.yml` file at the repository root.
+Для запуска DocsBot нужен Docker с Docker Compose. В состав стека входят база
+данных PostgreSQL 16 с расширением pgvector, приложение FastAPI и
+опциональный Telegram-бот. Все сервисы описаны в одном файле
+`docker-compose.yml` в корне репозитория.
 
-## Quick start
+## Быстрый старт
 
-Start the whole stack with one command:
+Запустите весь стек одной командой:
 
 ```
 docker compose up
 ```
 
-The API listens on port 8000 by default. The database listens on port 5432.
-The Telegram bot starts only when `TELEGRAM_ENABLED=true` and a valid
-`TELEGRAM_BOT_TOKEN` are present in the environment.
+API по умолчанию доступен на порту 8000, база данных — на порту 5432.
+Telegram-бот запускается, только если в окружении заданы
+`TELEGRAM_ENABLED=true` и корректный `TELEGRAM_BOT_TOKEN`.
 
-## Loading documents
+## Загрузка документов
 
-Before asking questions, load the Markdown files from the documentation
-directory into the vector store:
+Перед тем как задавать вопросы, загрузите Markdown-файлы из каталога
+документации в векторное хранилище:
 
 ```
 python -m app.ingest --path ./data/docs
 ```
 
-The command splits every Markdown file into chunks by headings, computes
-embeddings in batches, and stores them in PostgreSQL. Re-running the command
-is safe: unchanged files are skipped by hash, changed files are re-embedded,
-and deleted files are removed from the database.
+Команда разбивает каждый Markdown-файл на чанки по заголовкам, вычисляет
+эмбеддинги пакетами и сохраняет их в PostgreSQL. Повторный запуск безопасен:
+неизменившиеся файлы пропускаются по хэшу, изменившиеся пересчитываются, а
+файлы, удалённые с диска, убираются из базы данных.
 
-## Asking a question
+## Как задать вопрос
 
-Send a chat request to the REST API:
+Отправьте запрос к чату REST API:
 
 ```
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{"session_id": "demo", "message": "How do I load documents?"}'
+  -d '{"session_id": "demo", "message": "Как загрузить документы?"}'
 ```
 
-The response contains the generated answer, a list of source references, and
-the measured latency in milliseconds.
+Ответ содержит сгенерированный текст, список ссылок на источники и измеренную
+задержку в миллисекундах.

@@ -1,45 +1,46 @@
-# Architecture
+# Архитектура
 
-DocsBot follows a layered architecture. Business logic lives in dedicated
-service modules and does not depend on FastAPI or aiogram, which keeps the
-core testable and reusable across the REST API and the Telegram interface.
+DocsBot построен по слоистой архитектуре. Бизнес-логика находится в отдельных
+сервисных модулях и не зависит от FastAPI и aiogram — благодаря этому ядро
+легко тестировать и переиспользовать в REST API и Telegram-интерфейсе.
 
-## Layers
+## Слои
 
-The `api/` layer exposes HTTP routes. The `bot/` layer implements the Telegram
-interface. Both call the same service layer, so the answering logic is written
-once and never duplicated between channels.
+Слой `api/` предоставляет HTTP-маршруты. Слой `bot/` реализует
+Telegram-интерфейс. Оба слоя вызывают один и тот же сервисный слой, поэтому
+логика ответов написана один раз и не дублируется между каналами.
 
-The `services/` layer contains five responsibilities: retrieval, query
-rewriting, generation, dialogue memory, and chat orchestration. Retrieval turns
-a query into an embedding and fetches the top-k most similar chunks from
-pgvector. Query rewriting turns a follow-up message into a standalone query
-using recent history. Generation builds a prompt from the retrieved chunks and
-asks the language model for a grounded answer. Memory keeps a short history of
-recent turns per session. Chat orchestration wires these together into one
-entry point shared by the API and the bot.
+Слой `services/` отвечает за пять задач: поиск, переформулировку запроса,
+генерацию, память диалога и оркестрацию чата. Поиск преобразует запрос в
+эмбеддинг и извлекает из pgvector top-k наиболее похожих чанков.
+Переформулировка превращает уточняющее сообщение в самостоятельный запрос с
+учётом недавней истории. Генерация собирает промпт из найденных чанков и
+просит языковую модель дать ответ, основанный на контексте. Память хранит
+короткую историю последних реплик для каждой сессии. Оркестрация чата
+объединяет всё в единую точку входа, общую для API и бота.
 
-## Data flow
+## Поток данных
 
-A question flows through several stages. First the message is validated and
-rate-limited. Then, when dialogue history exists, the message is rewritten into
-a standalone query. The resulting query is embedded and matched against stored
-chunks by cosine similarity. If the best match is below the relevance
-threshold, the service returns a refusal without calling the model. Otherwise
-only the chunks at or above the threshold are formatted into a context block
-and the model generates an answer with inline citations such as [1] and [2].
+Вопрос проходит несколько этапов. Сначала сообщение проходит валидацию и
+ограничение частоты запросов. Затем, если есть история диалога, сообщение
+переформулируется в самостоятельный запрос. Полученный запрос преобразуется в
+эмбеддинг и сопоставляется с сохранёнными чанками по косинусной близости.
+Если лучший результат ниже порога релевантности, сервис возвращает отказ, не
+обращаясь к модели. В противном случае в блок контекста попадают только чанки
+не ниже порога, и модель генерирует ответ со встроенными ссылками на
+источники, например [1] и [2].
 
-## Storage
+## Хранение данных
 
-PostgreSQL 16 stores documents and their chunks. The `documents` table tracks
-each source file path and its content hash for idempotent ingestion. The
-`chunks` table holds chunk text, section metadata, and a `vector` column
-indexed with an HNSW cosine index. Embeddings have a fixed dimension that must
-match the configured embedding model.
+PostgreSQL 16 хранит документы и их чанки. Таблица `documents` хранит путь к
+каждому исходному файлу и хэш его содержимого для идемпотентной загрузки.
+Таблица `chunks` содержит текст чанка, метаданные раздела и столбец `vector`
+с индексом HNSW для косинусной близости. Эмбеддинги имеют фиксированную
+размерность, которая должна соответствовать выбранной модели эмбеддингов.
 
-## Extensibility
+## Расширяемость
 
-The LLM and embedding endpoints are OpenAI-compatible, so the provider can be
-changed by editing environment variables without touching code. Future
-improvements such as hybrid search, a reranker, or streaming responses fit
-into the same service boundaries.
+Эндпоинты LLM и эмбеддингов совместимы с OpenAI, поэтому провайдера можно
+сменить, изменив переменные окружения, без правки кода. Будущие улучшения —
+гибридный поиск, реранкер или потоковая выдача ответов — укладываются в те же
+границы сервисов.

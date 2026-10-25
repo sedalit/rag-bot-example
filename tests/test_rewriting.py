@@ -10,9 +10,9 @@ def test_build_rewrite_prompt_formats_history():
         Turn(role="assistant", text="Run the ingest command"),
     ]
     prompt = build_rewrite_prompt(history, "And the chunk size?")
-    assert "User: How do I load documents?" in prompt
-    assert "Assistant: Run the ingest command" in prompt
-    assert prompt.endswith("User: And the chunk size?")
+    assert "Пользователь: How do I load documents?" in prompt
+    assert "Ассистент: Run the ingest command" in prompt
+    assert prompt.endswith("Пользователь: And the chunk size?")
 
 
 class _Message:

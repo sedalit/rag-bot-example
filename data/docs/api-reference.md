@@ -1,32 +1,35 @@
-# API Reference
+# Справочник по API
 
-The REST API exposes two endpoints: a health check and a chat endpoint.
+REST API предоставляет два эндпоинта: проверку работоспособности и эндпоинт
+чата.
 
-## Health check
+## Проверка работоспособности
 
-`GET /health` reports whether the service and its database are available. It
-returns HTTP 200 when healthy and HTTP 503 when the database cannot be
-reached. It is intended for load balancers and container orchestration.
+`GET /health` сообщает, доступны ли сервис и его база данных. Он возвращает
+HTTP 200, если всё в порядке, и HTTP 503, если база данных недоступна.
+Эндпоинт предназначен для балансировщиков нагрузки и оркестраторов
+контейнеров.
 
-## Chat
+## Чат
 
-`POST /chat` accepts a JSON body with a `session_id` string and a `message`
-string. Messages are validated and length-limited. The response contains an
-`answer` string, a `sources` array, and a `latency_ms` integer.
+`POST /chat` принимает JSON-тело с полями `session_id` (строка) и `message`
+(строка). Сообщения проходят валидацию, и их длина ограничена. Ответ содержит
+строку `answer`, массив `sources` и целое число `latency_ms`.
 
-Each source object identifies a `file`, a `section`, and the matching
-`snippet` of chunk text. The answer text references sources with bracketed
-numbers such as [1] that correspond to the order of the sources array.
+Каждый объект источника содержит `file`, `section` и соответствующий фрагмент
+текста чанка в `snippet`. В тексте ответа источники обозначаются числами в
+квадратных скобках, например [1]; они соответствуют порядку элементов массива
+`sources`.
 
-## Errors
+## Ошибки
 
-All errors use a consistent JSON shape with an `error` object carrying a
-`code` and a human-readable `message`. Validation failures return HTTP 422,
-unknown routes return 404, and requests exceeding the per-session rate limit
-return 429.
+Все ошибки имеют единый формат JSON: объект `error` с полями `code` и
+понятным человеку `message`. Ошибки валидации возвращают HTTP 422,
+неизвестные маршруты — 404, а запросы, превышающие лимит частоты для сессии,
+— 429.
 
-## Refusal behaviour
+## Поведение при отказе
 
-When no retrieved chunk meets the relevance threshold, the endpoint does not
-call the language model. It returns a fixed refusal message stating that the
-knowledge base contains no information on the question.
+Если ни один найденный чанк не достигает порога релевантности, эндпоинт не
+обращается к языковой модели. Он возвращает фиксированное сообщение об отказе:
+«В базе знаний нет информации по этому вопросу.»

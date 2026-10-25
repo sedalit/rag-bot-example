@@ -1,43 +1,43 @@
-# Ingestion
+# Загрузка документов
 
-Ingestion is the pipeline that loads Markdown documentation into the vector
-store so it can be retrieved later. It is run from the command line and is
-designed to be idempotent.
+Загрузка — это конвейер, который помещает документацию в формате Markdown в
+векторное хранилище, чтобы позже её можно было находить по запросу. Он
+запускается из командной строки и спроектирован как идемпотентный.
 
-## Chunking
+## Чанкинг
 
-Each Markdown file is first split into sections by its headings. Nested
-headings form a heading path, for example `Configuration > Chunking`. Each
-section is then cut into chunks of at most the configured chunk size, with a
-small overlap between adjacent chunks so context is not lost at the boundary.
+Сначала каждый Markdown-файл разбивается на разделы по заголовкам. Вложенные
+заголовки образуют путь заголовков, например `Конфигурация > Чанкинг`. Затем
+каждый раздел нарезается на чанки, размер которых не превышает заданный, с
+небольшим перекрытием соседних чанков, чтобы не терять контекст на границе.
 
-Every chunk keeps metadata: the file path, the section heading, and its order
-within the document. This metadata is returned to the user as source
-references, so an answer can be traced back to a specific section.
+Каждый чанк хранит метаданные: путь к файлу, заголовок раздела и порядковый
+номер в документе. Эти метаданные возвращаются пользователю как ссылки на
+источники, поэтому ответ можно проследить до конкретного раздела.
 
-## Embeddings
+## Эмбеддинги
 
-Chunk text is embedded in batches through the configured OpenAI-compatible
-endpoint. Failed requests are retried with exponential backoff up to a
-configured maximum. Embeddings are validated against the configured dimension
-before they are written to PostgreSQL.
+Текст чанков преобразуется в эмбеддинги пакетами через настроенный эндпоинт,
+совместимый с OpenAI. Неудачные запросы повторяются с экспоненциальной
+задержкой до заданного максимума попыток. Перед записью в PostgreSQL
+эмбеддинги проверяются на соответствие заданной размерности.
 
-## Idempotency
+## Идемпотентность
 
-Each file's content is hashed with SHA-256. On every run the pipeline compares
-stored hashes against the files on disk. Files whose hash is unchanged are
-skipped entirely, so embeddings are never recomputed for them. Files that
-changed are re-chunked and re-embedded, replacing their old chunks. Files that
-were deleted from disk have their documents and chunks removed from the
-database.
+Содержимое каждого файла хэшируется алгоритмом SHA-256. При каждом запуске
+конвейер сравнивает сохранённые хэши с файлами на диске. Файлы с
+неизменившимся хэшем полностью пропускаются, поэтому эмбеддинги для них не
+пересчитываются. Изменённые файлы заново нарезаются на чанки, для них
+пересчитываются эмбеддинги, а старые чанки заменяются. Для файлов, удалённых
+с диска, документы и чанки удаляются из базы данных.
 
-## Running
+## Запуск
 
-Run the pipeline with:
+Запустите конвейер командой:
 
 ```
 python -m app.ingest --path ./data/docs
 ```
 
-The command prints a summary of added, updated, removed, and skipped files
-plus the total number of chunks written.
+Команда выводит сводку по добавленным, обновлённым, удалённым и пропущенным
+файлам, а также общее число записанных чанков.

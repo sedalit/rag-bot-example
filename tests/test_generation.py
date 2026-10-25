@@ -25,11 +25,12 @@ def test_build_context_numbers_blocks_with_metadata():
 
 def test_build_user_prompt_wraps_context_and_question():
     prompt = build_user_prompt("How do I start?", "CONTEXT")
-    assert prompt == "Context:\nCONTEXT\n\nQuestion: How do I start?"
+    assert prompt == "Контекст:\nCONTEXT\n\nВопрос: How do I start?"
 
 
 def test_load_system_prompt_reads_committed_file():
     prompt = load_system_prompt(BASE_DIR / "app" / "prompts")
     assert prompt
-    assert "context" in prompt.lower()
-    assert "[1]" in prompt or "cite" in prompt.lower()
+    assert "контекст" in prompt.lower()
+    assert "[1]" in prompt
+    assert "на русском языке" in prompt

@@ -1,196 +1,196 @@
 - id: 1
-  question: "How do I load documents into the knowledge base?"
+  question: "Как загрузить документы в базу знаний?"
   expected_file: "getting-started.md"
   facts:
     - "python -m app.ingest --path ./data/docs"
-    - "re-running is safe / idempotent"
+    - "повторный запуск безопасен / идемпотентен"
 
 - id: 2
-  question: "How do I start the whole DocsBot stack?"
+  question: "Как запустить весь стек DocsBot?"
   expected_file: "getting-started.md"
   facts:
     - "docker compose up"
 
 - id: 3
-  question: "What are the prerequisites for running DocsBot?"
+  question: "Какие требования для запуска DocsBot?"
   expected_file: "getting-started.md"
   facts:
     - "Docker"
     - "Docker Compose"
 
 - id: 4
-  question: "How do I ask a question through the REST API?"
+  question: "Как задать вопрос через REST API?"
   expected_file: "getting-started.md"
   facts:
     - "POST /chat"
-    - "session_id and message"
+    - "session_id и message"
 
 - id: 5
-  question: "What are the responsibilities of the services layer?"
+  question: "За что отвечает слой `services/`?"
   expected_file: "architecture.md"
   facts:
-    - "retrieval"
-    - "query rewriting"
-    - "generation"
-    - "memory"
-    - "chat orchestration"
+    - "поиск"
+    - "переформулировка запроса"
+    - "генерация"
+    - "память"
+    - "оркестрация чата"
 
 - id: 6
-  question: "What happens when the best retrieved chunk is below the relevance threshold?"
+  question: "Что происходит, если лучший найденный чанк ниже порога релевантности?"
   expected_file: "architecture.md"
   facts:
-    - "refusal"
-    - "does not call the model"
+    - "отказ"
+    - "модель не вызывается"
 
 - id: 7
-  question: "What does the documents table track?"
+  question: "Что отслеживает таблица `documents`?"
   expected_file: "architecture.md"
   facts:
-    - "file path"
-    - "content hash"
+    - "путь к файлу"
+    - "хэш содержимого"
 
 - id: 8
-  question: "What does the chunks table store?"
+  question: "Что хранит таблица `chunks`?"
   expected_file: "architecture.md"
   facts:
-    - "chunk text"
-    - "section metadata"
-    - "vector/embedding"
+    - "текст чанка"
+    - "метаданные раздела"
+    - "вектор/эмбеддинг"
 
 - id: 9
-  question: "Which database host address should I use and why?"
+  question: "Какой адрес хоста базы данных нужно использовать и почему?"
   expected_file: "configuration.md"
   facts:
     - "127.0.0.1"
-    - "avoid IPv6"
+    - "избежать проблем с IPv6"
 
 - id: 10
-  question: "How do I swap the LLM provider without changing code?"
+  question: "Как сменить провайдера LLM без изменения кода?"
   expected_file: "configuration.md"
   facts:
-    - "environment variables"
+    - "переменные окружения"
     - "LLM_BASE_URL"
 
 - id: 11
-  question: "What are the default chunk size and overlap?"
+  question: "Каковы размер чанка и перекрытие по умолчанию?"
   expected_file: "configuration.md"
   facts:
     - "800"
     - "100"
 
 - id: 12
-  question: "What does TOP_K control?"
+  question: "Что регулирует `TOP_K`?"
   expected_file: "configuration.md"
   facts:
-    - "number of retrieved chunks"
-    - "default 5"
+    - "количество извлекаемых чанков"
+    - "по умолчанию 5"
 
 - id: 13
-  question: "How is each Markdown document split during ingestion?"
+  question: "Как каждый Markdown-документ разбивается при загрузке?"
   expected_file: "ingestion.md"
   facts:
-    - "by headings"
-    - "chunks with overlap"
+    - "по заголовкам"
+    - "чанки с перекрытием"
 
 - id: 14
-  question: "What metadata is kept with each chunk?"
+  question: "Какие метаданные сохраняются вместе с каждым чанком?"
   expected_file: "ingestion.md"
   facts:
-    - "file path"
-    - "section heading"
-    - "order"
+    - "путь к файлу"
+    - "заголовок раздела"
+    - "порядок"
 
 - id: 15
-  question: "How are embeddings computed during ingestion?"
+  question: "Как вычисляются эмбеддинги при загрузке?"
   expected_file: "ingestion.md"
   facts:
-    - "in batches"
-    - "retries"
+    - "пакетами"
+    - "повторные попытки"
 
 - id: 16
-  question: "How does idempotent ingestion work?"
+  question: "Как работает идемпотентная загрузка?"
   expected_file: "ingestion.md"
   facts:
-    - "SHA-256 hash"
-    - "unchanged files skipped"
+    - "хэш SHA-256"
+    - "неизменившиеся файлы пропускаются"
 
 - id: 17
-  question: "What does the GET /health endpoint check?"
+  question: "Что проверяет эндпоинт `GET /health`?"
   expected_file: "api-reference.md"
   facts:
-    - "service and database"
+    - "сервис и база данных"
 
 - id: 18
-  question: "What does POST /chat accept and return?"
+  question: "Что принимает и возвращает `POST /chat`?"
   expected_file: "api-reference.md"
   facts:
-    - "session_id and message"
+    - "session_id и message"
     - "answer, sources, latency_ms"
 
 - id: 19
-  question: "What HTTP status is returned for validation errors?"
+  question: "Какой HTTP-статус возвращается при ошибках валидации?"
   expected_file: "api-reference.md"
   facts:
     - "422"
 
 - id: 20
-  question: "What HTTP status is returned when the rate limit is exceeded?"
+  question: "Какой HTTP-статус возвращается при превышении лимита частоты запросов?"
   expected_file: "api-reference.md"
   facts:
     - "429"
 
 - id: 21
-  question: "What is the relevance threshold for?"
+  question: "Для чего нужен порог релевантности?"
   expected_file: "configuration.md"
   facts:
-    - "minimum cosine similarity"
-    - "queries below it are refused"
+    - "минимальная косинусная близость"
+    - "запросы ниже порога отклоняются"
 
 - id: 22
-  question: "How many recent dialogue turns are kept per session by default?"
+  question: "Сколько последних реплик диалога по умолчанию хранится для каждой сессии?"
   expected_file: "configuration.md"
   facts:
     - "6"
 
 - id: 23
-  question: "How does the answer cite its sources?"
+  question: "Как ответ ссылается на источники?"
   expected_file: "architecture.md"
   facts:
-    - "bracketed numbers"
+    - "числа в квадратных скобках"
     - "[1], [2]"
 
 - id: 24
-  question: "What is the default embedding dimension?"
+  question: "Какая размерность эмбеддингов по умолчанию?"
   expected_file: "configuration.md"
   facts:
     - "1536"
 
 - id: 25
-  question: "What stages does a question flow through?"
+  question: "Через какие этапы проходит вопрос?"
   expected_file: "architecture.md"
   facts:
-    - "validated and rate-limited"
-    - "rewritten into a standalone query"
-    - "embedded and matched"
-    - "threshold check"
-    - "generation"
+    - "валидация и ограничение частоты запросов"
+    - "переформулировка в самостоятельный запрос"
+    - "эмбеддинг и сопоставление"
+    - "проверка порога"
+    - "генерация"
 
 - id: 26
-  question: "What is the capital of France?"
+  question: "Какая столица Франции?"
   expected_file: null
 
 - id: 27
-  question: "How do I cook pasta carbonara?"
+  question: "Как приготовить пасту карбонара?"
   expected_file: null
 
 - id: 28
-  question: "What is the weather in Tokyo today?"
+  question: "Какая сегодня погода в Токио?"
   expected_file: null
 
 - id: 29
-  question: "Who won the 2022 FIFA World Cup?"
+  question: "Кто победил на чемпионате мира по футболу 2022 года?"
   expected_file: null
 
 - id: 30
-  question: "What is the current price of Bitcoin?"
+  question: "Сколько сейчас стоит биткоин?"
   expected_file: null

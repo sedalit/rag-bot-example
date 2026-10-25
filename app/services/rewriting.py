@@ -21,9 +21,9 @@ def build_rewrite_prompt(history: list[Turn], message: str) -> str:
     """Format the dialogue history plus the current message for the rewriter."""
     lines = []
     for turn in history:
-        speaker = "User" if turn.role == "user" else "Assistant"
+        speaker = "Пользователь" if turn.role == "user" else "Ассистент"
         lines.append(f"{speaker}: {turn.text}")
-    lines.append(f"User: {message}")
+    lines.append(f"Пользователь: {message}")
     return "\n".join(lines)
 
 

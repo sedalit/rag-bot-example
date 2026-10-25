@@ -1,46 +1,48 @@
-# Configuration
+# Конфигурация
 
-DocsBot reads all settings from environment variables, with a template provided
-in `.env.example`. Secrets such as the LLM API key must never be committed to
-the repository.
+DocsBot читает все настройки из переменных окружения; шаблон настроек
+находится в `.env.example`. Секреты, например API-ключ LLM, нельзя коммитить в
+репозиторий.
 
-## Database
+## База данных
 
-`DATABASE_URL` points to PostgreSQL using the psycopg dialect. Use the IPv4
-loopback address `127.0.0.1` rather than `localhost` to avoid IPv6 resolution
-issues under Docker Desktop. The `EMBEDDING_DIM` value must match the output
-dimension of the configured embedding model; the default is 1536 for
-`text-embedding-3-small`.
+`DATABASE_URL` указывает на PostgreSQL и использует диалект psycopg. Используйте
+адрес петлевого интерфейса IPv4 `127.0.0.1`, а не `localhost`, чтобы избежать
+проблем с разрешением IPv6 в Docker Desktop. Значение `EMBEDDING_DIM` должно
+соответствовать размерности выходных векторов выбранной модели эмбеддингов; по
+умолчанию — 1536 для `text-embedding-3-small`.
 
-## Provider
+## Провайдер
 
-The language model and embeddings are configured through an OpenAI-compatible
-API. `LLM_BASE_URL` sets the endpoint, `LLM_API_KEY` the secret key, and
-`CHAT_MODEL` and `EMBEDDING_MODEL` select the concrete models. This lets you
-swap providers, for example from the hosted OpenAI API to a self-hosted
-endpoint, without any code changes.
+Языковая модель и эмбеддинги настраиваются через API, совместимый с OpenAI.
+`LLM_BASE_URL` задаёт эндпоинт, `LLM_API_KEY` — секретный ключ, а `CHAT_MODEL`
+и `EMBEDDING_MODEL` выбирают конкретные модели. Благодаря этому можно менять
+провайдера, например с облачного API OpenAI на собственный эндпоинт, без
+изменений в коде.
 
-## Chunking
+## Чанкинг
 
-`CHUNK_SIZE` and `CHUNK_OVERLAP` control how documents are split. The default
-chunk size is 800 characters with a 100 character overlap. Larger chunks carry
-more context but can dilute retrieval precision; smaller chunks are more
-precise but may lose surrounding context.
+`CHUNK_SIZE` и `CHUNK_OVERLAP` определяют, как разбиваются документы. Размер
+чанка по умолчанию — 800 символов, перекрытие — 100 символов. Большие чанки
+содержат больше контекста, но могут снизить точность поиска; маленькие чанки
+точнее, но могут потерять окружающий контекст.
 
-## Retrieval
+## Поиск
 
-`TOP_K` controls how many chunks are retrieved per query, defaulting to five.
-`RELEVANCE_THRESHOLD` is the minimum cosine similarity for the best chunk;
-queries below it are refused. `MEMORY_SIZE` is the number of recent dialogue
-turns kept per session, defaulting to six.
+`TOP_K` определяет, сколько чанков извлекается на один запрос; по умолчанию —
+пять. `RELEVANCE_THRESHOLD` — минимальная косинусная близость для лучшего
+чанка; если близость ниже порога, бот отказывается отвечать. `MEMORY_SIZE` —
+количество последних реплик диалога, сохраняемых для каждой сессии; по
+умолчанию — шесть.
 
-## Rate limiting
+## Ограничение частоты запросов
 
-The API applies a simple in-memory rate limit per session. `RATE_LIMIT_REQUESTS`
-and `RATE_LIMIT_WINDOW_SECONDS` define how many chat requests a session may
-send within the window before receiving a 429 response.
+API применяет простое ограничение частоты запросов в памяти для каждой сессии.
+`RATE_LIMIT_REQUESTS` и `RATE_LIMIT_WINDOW_SECONDS` задают, сколько запросов к
+чату сессия может отправить за окно времени до получения ответа 429.
 
 ## Telegram
 
-Set `TELEGRAM_ENABLED=true` and provide `TELEGRAM_BOT_TOKEN` to start the bot.
-When disabled, the bot process exits immediately and only the API runs.
+Установите `TELEGRAM_ENABLED=true` и укажите `TELEGRAM_BOT_TOKEN`, чтобы
+запустить бота. Если бот отключён, его процесс сразу завершается, и работает
+только API.

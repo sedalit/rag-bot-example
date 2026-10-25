@@ -77,7 +77,7 @@ class Judge:
 
     async def judge(self, question: str, facts: list[str], answer: str) -> bool:
         fact_lines = "\n".join(f"- {fact}" for fact in facts)
-        user = f"Question: {question}\nKey facts:\n{fact_lines}\n\nAnswer:\n{answer}"
+        user = f"Вопрос: {question}\nКлючевые факты:\n{fact_lines}\n\nОтвет:\n{answer}"
         response = await self._client.chat.completions.create(
             model=self._model,
             messages=[
@@ -87,7 +87,7 @@ class Judge:
             temperature=0.0,
         )
         verdict = (response.choices[0].message.content or "").strip().upper()
-        return verdict.startswith("CORRECT")
+        return verdict.startswith("ВЕРНО")
 
 
 def load_questions(path: Path) -> list[Question]:
