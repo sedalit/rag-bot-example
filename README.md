@@ -13,8 +13,11 @@ RAG-сервис, который отвечает на вопросы по ба�
   релевантности).
 - Генерация ответа на русском языке с inline-цитатами `[1]`, `[2]`; системный
   промпт — в файле.
+- Базовые ответы без обращения к LLM: приветствие, «что ты умеешь»,
+  благодарность и прощание.
 - Диалоговая память и query rewriting для follow-up вопросов.
-- REST API (`POST /chat`, `GET /health`) и Telegram-бот (`/start`, `/reset`).
+- REST API (`POST /chat`, `GET /health`) и Telegram-бот (`/start`, `/help`,
+  `/reset`).
 - Оценка качества: Hit@k, Answer accuracy (LLM-судья), Refusal accuracy,
   средняя задержка.
 
@@ -62,9 +65,9 @@ flowchart LR
     EMB --> LLM
 ```
 
-Слои разделены: `api/`, `bot/`, `services/` (retrieval, generation, memory),
-`db/`, `ingest/`, `eval/`. Бизнес-логика живёт в `services/` и не зависит от
-FastAPI и aiogram — API и бот вызывают один и тот же `ChatService`.
+Слои разделены: `api/`, `bot/`, `services/` (retrieval, generation, memory,
+smalltalk), `db/`, `ingest/`, `eval/`. Бизнес-логика живёт в `services/` и не
+зависит от FastAPI и aiogram — API и бот вызывают один и тот же `ChatService`.
 
 ## Структура
 
@@ -72,7 +75,7 @@ FastAPI и aiogram — API и бот вызывают один и тот же `C
 app/
 ├── api/          # FastAPI роуты, схемы, ошибки, rate limit
 ├── bot/          # Telegram-бот
-├── services/     # retrieval, generation, memory, rewriting, chat
+├── services/     # retrieval, generation, memory, rewriting, smalltalk, chat
 ├── db/           # модели, сессия, миграции
 ├── ingest/       # чанкинг, эмбеддинги, загрузка
 ├── prompts/      # системные промпты (system, rewrite, judge)

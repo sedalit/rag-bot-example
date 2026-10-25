@@ -12,6 +12,7 @@ from app.services.chat import ChatService
 from app.services.generation import Generator
 from app.services.memory import DialogueMemory
 from app.services.retrieval import REFUSAL_ANSWER
+from app.services.smalltalk import GREETING_TEXT
 
 # --- Fakes for the OpenAI-compatible clients (no network) --------------------
 
@@ -201,6 +202,16 @@ async def test_chat_runs_real_pipeline_with_mocked_llm(client):
         {"file": "doc.md", "section": "Section A", "snippet": "content one"},
         {"file": "other.md", "section": "Section B", "snippet": "content two"},
     ]
+    assert isinstance(data["latency_ms"], int)
+
+
+async def test_chat_answers_basic_request_without_sources(client):
+    resp = await client.post("/chat", json={"session_id": "s1", "message": "Привет!"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["answer"] == GREETING_TEXT
+    assert data["sources"] == []
     assert isinstance(data["latency_ms"], int)
 
 

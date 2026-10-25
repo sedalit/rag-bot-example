@@ -5,11 +5,10 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from app.services.chat import ChatService, Source
+from app.services.smalltalk import GREETING_TEXT, HELP_TEXT
 
-WELCOME = (
-    "Привет! Я DocsBot — отвечаю на вопросы по документации проекта.\n"
-    "Команда /reset очищает историю диалога."
-)
+WELCOME = GREETING_TEXT
+UNKNOWN_COMMAND_TEXT = "Неизвестная команда. Доступны: /start, /help, /reset."
 
 
 def format_reply(answer: str, sources: list[Source]) -> str:
@@ -28,10 +27,18 @@ def build_dispatcher(chat_service: ChatService) -> Dispatcher:
     async def start(message: Message) -> None:
         await message.answer(WELCOME)
 
+    @dp.message(Command("help"))
+    async def help_command(message: Message) -> None:
+        await message.answer(HELP_TEXT)
+
     @dp.message(Command("reset"))
     async def reset(message: Message) -> None:
         chat_service.reset(str(message.chat.id))
         await message.answer("История диалога очищена.")
+
+    @dp.message(F.text.startswith("/"))
+    async def unknown_command(message: Message) -> None:
+        await message.answer(UNKNOWN_COMMAND_TEXT)
 
     @dp.message(F.text)
     async def chat(message: Message) -> None:

@@ -1,4 +1,4 @@
-"""Chat orchestration: rewrite → embed → retrieve → threshold → generate."""
+"""Chat orchestration: basic replies → rewrite → embed → retrieve → threshold → generate."""
 
 import logging
 import time
@@ -16,6 +16,7 @@ from app.services.retrieval import (
     search_similar,
 )
 from app.services.rewriting import QueryRewriter
+from app.services.smalltalk import match_basic_reply
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,11 @@ class ChatResult:
 
 
 class ChatService:
-    """Answers questions by retrieving context and generating a grounded reply."""
+    """Answers questions from retrieved context and handles basic requests.
+
+    Greetings, help requests, thanks and goodbyes are answered deterministically
+    before retrieval, so they never reach the embedder or the language model.
+    """
 
     def __init__(
         self,
@@ -61,6 +66,21 @@ class ChatService:
 
     async def answer(self, session_id: str, message: str) -> ChatResult:
         started = time.perf_counter()
+
+        basic = match_basic_reply(message)
+        if basic is not None:
+            latency_ms = int((time.perf_counter() - started) * 1000)
+            logger.info(
+                "basic_reply",
+                extra={
+                    "session_id": session_id,
+                    "intent": basic.intent,
+                    "latency_ms": latency_ms,
+                },
+            )
+            # Small talk carries no document context, so it is deliberately not
+            # stored in dialogue memory and cannot pollute query rewriting.
+            return ChatResult(answer=basic.text, sources=[], latency_ms=latency_ms)
 
         history = self._memory.get(session_id)
         query = await self._rewriter.rewrite(history, message)

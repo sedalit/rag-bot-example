@@ -5,6 +5,7 @@ from app.services.chat import ChatService
 from app.services.generation import GeneratedAnswer
 from app.services.memory import DialogueMemory, Turn
 from app.services.retrieval import REFUSAL_ANSWER, RetrievedChunk
+from app.services.smalltalk import GREETING_TEXT
 
 
 class _FakeEmbedder:
@@ -167,4 +168,32 @@ async def test_reset_clears_history(monkeypatch):
     assert memory.get("sid")
 
     service.reset("sid")
+    assert memory.get("sid") == []
+
+
+async def test_basic_request_bypasses_retrieval_and_generation(monkeypatch):
+    memory = DialogueMemory(max_turns=6)
+    rewriter = _FakeRewriter()
+    generator = _FakeGenerator("the answer", total_tokens=7)
+    service = ChatService(
+        settings=get_settings(),
+        embedder=_FakeEmbedder([[0.1, 0.2, 0.3]]),
+        generator=generator,
+        rewriter=rewriter,
+        memory=memory,
+        session_factory=_StubSessionFactory(),
+    )
+
+    async def fail_search(session: object, query_embedding: list[float], top_k: int):
+        raise AssertionError("search must not run for a basic request")
+
+    monkeypatch.setattr("app.services.chat.search_similar", fail_search)
+
+    result = await service.answer("sid", "Привет!")
+
+    assert result.answer == GREETING_TEXT
+    assert result.sources == []
+    assert result.refused is False
+    assert rewriter.calls == []
+    assert generator.calls == []
     assert memory.get("sid") == []
