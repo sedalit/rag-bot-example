@@ -1,0 +1,196 @@
+- id: 1
+  question: "Как загрузить документы в базу знаний?"
+  expected_file: "getting-started.md"
+  facts:
+    - "python -m app.ingest --path ./data/docs"
+    - "повторный запуск безопасен / идемпотентен"
+
+- id: 2
+  question: "Как запустить весь стек DocsBot?"
+  expected_file: "getting-started.md"
+  facts:
+    - "docker compose up"
+
+- id: 3
+  question: "Какие требования для запуска DocsBot?"
+  expected_file: "getting-started.md"
+  facts:
+    - "Docker"
+    - "Docker Compose"
+
+- id: 4
+  question: "Как задать вопрос через REST API?"
+  expected_file: "getting-started.md"
+  facts:
+    - "POST /chat"
+    - "session_id и message"
+
+- id: 5
+  question: "За что отвечает слой `services/`?"
+  expected_file: "architecture.md"
+  facts:
+    - "поиск"
+    - "переформулировка запроса"
+    - "генерация"
+    - "память"
+    - "оркестрация чата"
+
+- id: 6
+  question: "Что происходит, если лучший найденный чанк ниже порога релевантности?"
+  expected_file: "architecture.md"
+  facts:
+    - "отказ"
+    - "модель не вызывается"
+
+- id: 7
+  question: "Что отслеживает таблица `documents`?"
+  expected_file: "architecture.md"
+  facts:
+    - "путь к файлу"
+    - "хэш содержимого"
+
+- id: 8
+  question: "Что хранит таблица `chunks`?"
+  expected_file: "architecture.md"
+  facts:
+    - "текст чанка"
+    - "метаданные раздела"
+    - "вектор/эмбеддинг"
+
+- id: 9
+  question: "Какой адрес хоста базы данных нужно использовать и почему?"
+  expected_file: "configuration.md"
+  facts:
+    - "127.0.0.1"
+    - "избежать проблем с IPv6"
+
+- id: 10
+  question: "Как сменить провайдера LLM без изменения кода?"
+  expected_file: "configuration.md"
+  facts:
+    - "переменные окружения"
+    - "LLM_BASE_URL"
+
+- id: 11
+  question: "Каковы размер чанка и перекрытие по умолчанию?"
+  expected_file: "configuration.md"
+  facts:
+    - "800"
+    - "100"
+
+- id: 12
+  question: "Что регулирует `TOP_K`?"
+  expected_file: "configuration.md"
+  facts:
+    - "количество извлекаемых чанков"
+    - "по умолчанию 5"
+
+- id: 13
+  question: "Как каждый Markdown-документ разбивается при загрузке?"
+  expected_file: "ingestion.md"
+  facts:
+    - "по заголовкам"
+    - "чанки с перекрытием"
+
+- id: 14
+  question: "Какие метаданные сохраняются вместе с каждым чанком?"
+  expected_file: "ingestion.md"
+  facts:
+    - "путь к файлу"
+    - "заголовок раздела"
+    - "порядок"
+
+- id: 15
+  question: "Как вычисляются эмбеддинги при загрузке?"
+  expected_file: "ingestion.md"
+  facts:
+    - "пакетами"
+    - "повторные попытки"
+
+- id: 16
+  question: "Как работает идемпотентная загрузка?"
+  expected_file: "ingestion.md"
+  facts:
+    - "хэш SHA-256"
+    - "неизменившиеся файлы пропускаются"
+
+- id: 17
+  question: "Что проверяет эндпоинт `GET /health`?"
+  expected_file: "api-reference.md"
+  facts:
+    - "сервис и база данных"
+
+- id: 18
+  question: "Что принимает и возвращает `POST /chat`?"
+  expected_file: "api-reference.md"
+  facts:
+    - "session_id и message"
+    - "answer, sources, latency_ms"
+
+- id: 19
+  question: "Какой HTTP-статус возвращается при ошибках валидации?"
+  expected_file: "api-reference.md"
+  facts:
+    - "422"
+
+- id: 20
+  question: "Какой HTTP-статус возвращается при превышении лимита частоты запросов?"
+  expected_file: "api-reference.md"
+  facts:
+    - "429"
+
+- id: 21
+  question: "Для чего нужен порог релевантности?"
+  expected_file: "configuration.md"
+  facts:
+    - "минимальная косинусная близость"
+    - "запросы ниже порога отклоняются"
+
+- id: 22
+  question: "Сколько последних реплик диалога по умолчанию хранится для каждой сессии?"
+  expected_file: "configuration.md"
+  facts:
+    - "6"
+
+- id: 23
+  question: "Как ответ ссылается на источники?"
+  expected_file: "architecture.md"
+  facts:
+    - "числа в квадратных скобках"
+    - "[1], [2]"
+
+- id: 24
+  question: "Какая размерность эмбеддингов по умолчанию?"
+  expected_file: "configuration.md"
+  facts:
+    - "1536"
+
+- id: 25
+  question: "Через какие этапы проходит вопрос?"
+  expected_file: "architecture.md"
+  facts:
+    - "валидация и ограничение частоты запросов"
+    - "переформулировка в самостоятельный запрос"
+    - "эмбеддинг и сопоставление"
+    - "проверка порога"
+    - "генерация"
+
+- id: 26
+  question: "Какая столица Франции?"
+  expected_file: null
+
+- id: 27
+  question: "Как приготовить пасту карбонара?"
+  expected_file: null
+
+- id: 28
+  question: "Какая сегодня погода в Токио?"
+  expected_file: null
+
+- id: 29
+  question: "Кто победил на чемпионате мира по футболу 2022 года?"
+  expected_file: null
+
+- id: 30
+  question: "Сколько сейчас стоит биткоин?"
+  expected_file: null

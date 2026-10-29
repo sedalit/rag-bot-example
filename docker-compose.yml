@@ -1,0 +1,53 @@
+# Shared environment for the application services (API and bot).
+x-app-env: &app-env
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-docsbot}:${POSTGRES_PASSWORD:-docsbot}@db:5432/${POSTGRES_DB:-docsbot}
+  LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+  LLM_API_KEY: ${LLM_API_KEY:-}
+  CHAT_MODEL: ${CHAT_MODEL:-gpt-4o-mini}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+  LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.0}
+  LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-1024}
+  LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-60}
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-docsbot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docsbot}
+      POSTGRES_DB: ${POSTGRES_DB:-docsbot}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docsbot} -d ${POSTGRES_DB:-docsbot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      <<: *app-env
+    command: sh -c "alembic upgrade head && python -m app"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  bot:
+    build: .
+    environment:
+      <<: *app-env
+      TELEGRAM_ENABLED: ${TELEGRAM_ENABLED:-false}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+    command: python -m app.bot
+    profiles: ["bot"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

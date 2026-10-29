@@ -1,0 +1,1 @@
+"""DocsBot application package."""
